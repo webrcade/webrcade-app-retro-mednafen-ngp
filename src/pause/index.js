@@ -5,18 +5,21 @@ import { GamepadControlsTab, KeyboardControlsTab } from './controls';
 import { NesSettingsEditor } from './settings';
 
 import {
+  AchievementsScreen,
   CustomPauseScreen,
   EditorScreen,
+  EmojiEventsWhiteImage,
   GamepadWhiteImage,
   KeyboardWhiteImage,
+  NgcBackground,
+  NgpBackground,
   PauseScreenButton,
   Resources,
   SaveStatesEditor,
   SaveWhiteImage,
   SettingsAppWhiteImage,
-  NgcBackground,
-  NgpBackground,
   TEXT_IDS,
+  achievements,
 } from '@webrcade/app-common';
 
 export class EmulatorPauseScreen extends Component {
@@ -34,9 +37,11 @@ export class EmulatorPauseScreen extends Component {
     CONTROLS: 'controls',
     SETTINGS: 'nes-settings',
     STATE: 'state',
+    ACHIEVEMENTS: 'achievements',
   };
 
   ADDITIONAL_BUTTON_REFS = [React.createRef(), React.createRef(), React.createRef()];
+  SECONDARY_BUTTON_REFS = [React.createRef(), React.createRef()];
 
   componentDidMount() {
     const { loaded } = this.state;
@@ -56,7 +61,7 @@ export class EmulatorPauseScreen extends Component {
   }
 
   render() {
-    const { ADDITIONAL_BUTTON_REFS, ModeEnum } = this;
+    const { ADDITIONAL_BUTTON_REFS, SECONDARY_BUTTON_REFS, ModeEnum } = this;
     const { appProps, closeCallback, emulator, exitCallback, isEditor, isStandalone } = this.props;
     const { cloudEnabled, loaded, mode } = this.state;
 
@@ -68,6 +73,7 @@ export class EmulatorPauseScreen extends Component {
 
     const additionalButtons = [
       <PauseScreenButton
+        key="controls"
         imgSrc={GamepadWhiteImage}
         buttonRef={ADDITIONAL_BUTTON_REFS[0]}
         label={Resources.getText(TEXT_IDS.VIEW_CONTROLS)}
@@ -79,6 +85,7 @@ export class EmulatorPauseScreen extends Component {
         }}
       />,
       <PauseScreenButton
+        key="settings"
         imgSrc={SettingsAppWhiteImage}
         buttonRef={ADDITIONAL_BUTTON_REFS[1]}
         label={type === 'retro-mednafen-ngp' ? "NG Pocket Settings" : "NGP Color Settings"}
@@ -94,6 +101,7 @@ export class EmulatorPauseScreen extends Component {
     if (cloudEnabled) {
       additionalButtons.push(
         <PauseScreenButton
+          key="state"
           imgSrc={SaveWhiteImage}
           buttonRef={ADDITIONAL_BUTTON_REFS[2]}
           label={Resources.getText(TEXT_IDS.SAVE_STATES)}
@@ -107,6 +115,29 @@ export class EmulatorPauseScreen extends Component {
       );
     }
 
+    const secondaryButtons = [];
+    let secondaryRefIdx = 0;
+
+    if (achievements.isLoggedIn() && achievements.hasAchievements()) {
+      const achievementsRef = SECONDARY_BUTTON_REFS[secondaryRefIdx++];
+      secondaryButtons.push(
+        <PauseScreenButton
+          key="achievements"
+          imgSrc={EmojiEventsWhiteImage}
+          buttonRef={achievementsRef}
+          label="Achievements"
+          onHandlePad={(focusGrid, e) =>
+            focusGrid.moveFocus(e.type, achievementsRef)
+          }
+          onClick={() => {
+            this.setState({ mode: ModeEnum.ACHIEVEMENTS });
+          }}
+        />
+      );
+    }
+
+    const usedSecondaryRefs = SECONDARY_BUTTON_REFS.slice(0, secondaryRefIdx);
+
     return (
       <>
         {mode === ModeEnum.PAUSE ? (
@@ -118,6 +149,8 @@ export class EmulatorPauseScreen extends Component {
             isStandalone={isStandalone}
             additionalButtonRefs={ADDITIONAL_BUTTON_REFS}
             additionalButtons={additionalButtons}
+            secondaryButtonRefs={usedSecondaryRefs}
+            secondaryButtons={secondaryButtons}
           />
         ) : null}
         {mode === ModeEnum.CONTROLS ? (
@@ -146,10 +179,14 @@ export class EmulatorPauseScreen extends Component {
         {mode === ModeEnum.STATE ? (
           <SaveStatesEditor
             emptyImageSrc={type === 'retro-mednafen-ngp' ? NgpBackground : NgcBackground}
-
             emulator={emulator}
             onClose={closeCallback}
             showStatusCallback={emulator.saveMessageCallback}
+          />
+        ) : null}
+        {mode === ModeEnum.ACHIEVEMENTS ? (
+          <AchievementsScreen
+            onClose={closeCallback}
           />
         ) : null}
       </>

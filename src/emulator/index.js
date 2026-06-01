@@ -42,6 +42,11 @@ export class Emulator extends RetroAppWrapper {
     ).setDebug(this.debug);
   }
 
+  getHashFileExtension() {
+    const type = this.getProps().type;
+    return type === 'retro-mednafen-ngp' ? 'ngp' : 'ngc';
+  }
+
   onFrame() {
     if (this.audioStarted !== -1) {
       if (this.audioStarted > 1) {
